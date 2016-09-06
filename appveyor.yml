@@ -10,6 +10,7 @@ environment:
 
 install:
   - ECHO Installing %COMPILER% %PLATFORM% %CONFIGURATION%
+  - MKDIR bin
   - if [%COMPILER%]==[gcc] SET PATH_ORIGINAL=%PATH%
   - if [%COMPILER%]==[gcc] (
       SET "CLANG_PARAMS=-C tests zstd fullbench fuzzer zbufftest paramgrill datagen CC=clang MOREFLAGS="--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion"" &&
