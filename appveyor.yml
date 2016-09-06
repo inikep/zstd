@@ -35,12 +35,12 @@ build_script:
       make %MAKE_PARAMS%
     )
   - if [%COMPILER%]==[gcc] if [%CONFIGURATION%]==[mingw64] (
-      COPY programs\zstd.exe zstd.exe &&
-      appveyor PushArtifact zstd.exe
+      COPY programs\zstd.exe bin\zstd.exe &&
+      appveyor PushArtifact bin\zstd.exe
     )
   - if [%COMPILER%]==[gcc] if [%CONFIGURATION%]==[mingw32] (
-      COPY programs\zstd.exe zstd32.exe &&
-      appveyor PushArtifact zstd32.exe
+      COPY programs\zstd.exe bin\zstd32.exe &&
+      appveyor PushArtifact bin\zstd32.exe
     )
   - if [%COMPILER%]==[gcc] make clean
   - if [%COMPILER%]==[visual] (
@@ -111,14 +111,14 @@ test_script:
     )
 
 artifacts:
-  - path: zstd.exe
-  - path: zstd32.exe 
+  - path: bin\zstd.exe
+  - path: bin\zstd32.exe 
 
 deploy:
 - provider: GitHub
   auth_token:
     secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
-  artifact: zstd.exe
+  artifact: bin\zstd.exe
   force_update: true
   on:
     branch: artifacts
@@ -128,7 +128,7 @@ deploy:
 - provider: GitHub
   auth_token:
     secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
-  artifact: zstd32.exe 
+  artifact: bin\zstd32.exe 
   force_update: true
   on:
     branch: artifacts
