@@ -1,23 +1,11 @@
 version: 1.0.{build}
 environment:
   matrix:
-  - COMPILER: "visual"
-    CONFIGURATION: "Debug"
-    PLATFORM: "x64"
-  - COMPILER: "visual"
-    CONFIGURATION: "Debug"
-    PLATFORM: "Win32"
-  - COMPILER: "visual"
-    CONFIGURATION: "Release"
-    PLATFORM: "x64"
-  - COMPILER: "visual"
-    CONFIGURATION: "Release"
-    PLATFORM: "Win32"
   - COMPILER: "gcc"
-    MAKE_PARAMS: "test"
+    MAKE_PARAMS: "zstd"
     PLATFORM: "mingw64"
   - COMPILER: "gcc"
-    MAKE_PARAMS: "test"
+    MAKE_PARAMS: "zstd"
     PLATFORM: "mingw32"
 
 install:
@@ -37,16 +25,6 @@ build_script:
   - ECHO Building %COMPILER% %PLATFORM% %CONFIGURATION%
   - if [%PLATFORM%]==[mingw32] SET PATH=%PATH_MINGW32%;%PATH_ORIGINAL% 
   - if [%PLATFORM%]==[mingw64] SET PATH=%PATH_MINGW64%;%PATH_ORIGINAL% 
-  - if [%PLATFORM%]==[mingw64] (
-      make clean &&
-      ECHO *** &&
-      ECHO *** Building clang &&
-      ECHO *** &&
-      ECHO make %CLANG_PARAMS% &&
-      make %CLANG_PARAMS% &&
-      COPY tests\fuzzer.exe tests\fuzzer_clang.exe &&
-      make clean
-    )
   - if [%COMPILER%]==[gcc] (
       ECHO *** &&
       ECHO *** Building %PLATFORM% &&
@@ -119,9 +97,6 @@ build_script:
 test_script:
   - ECHO Testing %COMPILER% %PLATFORM% %CONFIGURATION%
   - SET FUZZERTEST=-T1mn
-  - if [%COMPILER%]==[gcc] (
-      if [%PLATFORM%]==[mingw64] tests\fuzzer_clang.exe %FUZZERTEST%
-    )
   - if [%COMPILER%]==[visual] if [%CONFIGURATION%]==[Release] (
       CD tests &&
       SET ZSTD=./zstd.exe &&
