@@ -44,6 +44,7 @@ test_script:
 
 artifacts:
   - path: bin/zstd_%PLATFORM%.exe
+    name: zstd executable
 
 deploy:
 - provider: GitHub
