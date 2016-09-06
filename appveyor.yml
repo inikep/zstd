@@ -121,6 +121,7 @@ deploy:
   artifact: zstd.exe
   force_update: true
   on:
+    branch: artifacts
     COMPILER: gcc
     PLATFORM: "mingw64"
     appveyor_repo_tag: false
@@ -130,6 +131,7 @@ deploy:
   artifact: zstd32.exe 
   force_update: true
   on:
+    branch: artifacts
     COMPILER: gcc
     PLATFORM: "mingw32"
     appveyor_repo_tag: false
