@@ -123,7 +123,7 @@ deploy:
   on:
     COMPILER: gcc
     PLATFORM: "mingw64"
-    appveyor_repo_tag: true
+    appveyor_repo_tag: false
 - provider: GitHub
   auth_token:
     secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
@@ -132,4 +132,4 @@ deploy:
   on:
     COMPILER: gcc
     PLATFORM: "mingw32"
-    appveyor_repo_tag: true
+    appveyor_repo_tag: false
