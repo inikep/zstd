@@ -44,9 +44,7 @@ test_script:
 
 artifacts:
   - path: bin/zstd_mingw64.exe
-    name: zstd executable
   - path: bin/zstd_mingw32.exe
-    name: zstd executable
 
 deploy:
 - provider: GitHub
@@ -54,9 +52,22 @@ deploy:
   description: 'zstd Windows binary'
   auth_token:
     secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
-  artifact: bin/zstd_%PLATFORM%.exe
+  artifact: bin/zstd_mingw64.exe
   force_update: true
   on:
     branch: artifacts
     COMPILER: gcc
+    PLATFORM: "mingw64"
+    appveyor_repo_tag: false        # deploy on tag push only
+- provider: GitHub
+  release: zstd-v$(appveyor_build_version)
+  description: 'zstd Windows binary'
+  auth_token:
+    secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
+  artifact: bin/zstd_mingw32.exe
+  force_update: true
+  on:
+    branch: artifacts
+    COMPILER: gcc
+    PLATFORM: "mingw32"
     appveyor_repo_tag: false        # deploy on tag push only
