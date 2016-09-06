@@ -32,7 +32,10 @@ build_script:
       ECHO make %MAKE_PARAMS% &&
       make %MAKE_PARAMS% &&
       COPY programs\zstd.exe bin\zstd_%PLATFORM%.exe &&
+      echo appveyor PushArtifact bin\zstd_%PLATFORM%.exe &&
       appveyor PushArtifact bin\zstd_%PLATFORM%.exe &&
+      7z a bin.zip bin\* &&
+      appveyor PushArtifact bin.zip &&
       make clean
     )
 
