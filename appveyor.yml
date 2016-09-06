@@ -43,7 +43,9 @@ test_script:
   - ECHO Testing %COMPILER% %PLATFORM% %CONFIGURATION%
 
 artifacts:
-  - path: bin/zstd_%PLATFORM%.exe
+  - path: bin/zstd_mingw64.exe
+    name: zstd executable
+  - path: bin/zstd_mingw32.exe
     name: zstd executable
 
 deploy:
