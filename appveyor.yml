@@ -1,4 +1,9 @@
 version: 1.0.{build}
+artifacts:
+  - path: bin
+    name: zstd binaries
+    type: zip
+
 environment:
   matrix:
   - COMPILER: "gcc"
@@ -7,10 +12,6 @@ environment:
   - COMPILER: "gcc"
     MAKE_PARAMS: "test"
     PLATFORM: "mingw64"
-    artifacts:
-      - path: bin
-        name: zstd binaries
-        type: zip
     deploy:
       release: myproduct-v$(appveyor_build_version)
       description: 'Release description'
