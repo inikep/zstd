@@ -32,9 +32,9 @@ build_script:
       ECHO make %MAKE_PARAMS% &&
       make %MAKE_PARAMS% &&
       COPY programs\zstd.exe bin\zstd_%PLATFORM%.exe &&
-      echo appveyor PushArtifact bin\zstd_%PLATFORM%.exe &&
-      appveyor PushArtifact bin\zstd_%PLATFORM%.exe &&
-      7z a bin.zip bin\* &&
+      echo appveyor PushArtifact bin/zstd_%PLATFORM%.exe &&
+      appveyor PushArtifact bin/zstd_%PLATFORM%.exe &&
+      7z a bin.zip bin/* &&
       appveyor PushArtifact bin.zip &&
       make clean
     )
@@ -44,14 +44,14 @@ test_script:
 
 deploy:
 - provider: GitHub
-  tag: zstd_bin
-  release: zstd Windows binary
-  description: zstd Windows binary
+  release: zstd-v$(appveyor_build_version)
+  description: 'zstd Windows binary'
   auth_token:
     secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
-  artifact: bin.zip bin\zstd_mingw64.exe
+  artifact: bin.zip bin/zstd_mingw64.exe
   force_update: true
   on:
     branch: artifacts
     COMPILER: gcc
     PLATFORM: "mingw64"
+    appveyor_repo_tag: false        # deploy on tag push only
