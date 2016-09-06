@@ -42,6 +42,10 @@ build_script:
 test_script:
   - ECHO Testing %COMPILER% %PLATFORM% %CONFIGURATION%
 
+artifacts:
+  - path: bin/zstd_mingw64.exe
+    name: zstd executable
+
 deploy:
 - provider: GitHub
   release: zstd-v$(appveyor_build_version)
