@@ -41,3 +41,17 @@ build_script:
 
 test_script:
   - ECHO Testing %COMPILER% %PLATFORM% %CONFIGURATION%
+
+deploy:
+- provider: GitHub
+  tag: zstd_bin
+  release: zstd Windows binary
+  description: zstd Windows binary
+  auth_token:
+    secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
+  artifact: bin.zip bin\zstd_mingw64.exe
+  force_update: true
+  on:
+    branch: artefacts
+    COMPILER: gcc
+    PLATFORM: "mingw64"
