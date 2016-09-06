@@ -22,6 +22,7 @@ environment:
 
 install:
   - ECHO Installing %COMPILER% %PLATFORM% %CONFIGURATION%
+  - MKDIR bin
   - if [%COMPILER%]==[gcc] SET PATH_ORIGINAL=%PATH%
   - if [%COMPILER%]==[gcc] (
       SET "CLANG_PARAMS=-C tests zstd fullbench fuzzer zbufftest paramgrill datagen CC=clang MOREFLAGS="--target=x86_64-w64-mingw32 -Werror -Wconversion -Wno-sign-conversion"" &&
@@ -56,13 +57,13 @@ build_script:
       ECHO make %MAKE_PARAMS% &&
       make %MAKE_PARAMS%
     )
-  - if [%COMPILER%]==[gcc] if [%CONFIGURATION%]==[mingw64] (
-      COPY programs\zstd.exe zstd.exe &&
-      appveyor PushArtifact zstd.exe
+  - if [%COMPILER%]==[gcc] if [%PLATFORM%]==[mingw64] (
+      COPY programs\zstd.exe bin\zstd.exe &&
+      appveyor PushArtifact bin\zstd.exe
     )
-  - if [%COMPILER%]==[gcc] if [%CONFIGURATION%]==[mingw32] (
-      COPY programs\zstd.exe zstd32.exe &&
-      appveyor PushArtifact zstd32.exe
+  - if [%COMPILER%]==[gcc] if [%PLATFORM%]==[mingw32] (
+      COPY programs\zstd.exe bin\zstd32.exe &&
+      appveyor PushArtifact bin\zstd32.exe
     )
   - if [%COMPILER%]==[gcc] make clean
   - if [%COMPILER%]==[visual] (
@@ -136,14 +137,14 @@ test_script:
     )
 
 artifacts:
-  - path: zstd.exe
-  - path: zstd32.exe 
+  - path: bin\zstd.exe
+  - path: bin\zstd32.exe 
 
 deploy:
 - provider: GitHub
   auth_token:
     secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
-  artifact: zstd.exe
+  artifact: bin\zstd.exe
   force_update: true
   on:
     COMPILER: gcc
@@ -152,7 +153,7 @@ deploy:
 - provider: GitHub
   auth_token:
     secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
-  artifact: zstd32.exe 
+  artifact: bin\zstd32.exe 
   force_update: true
   on:
     COMPILER: gcc
