@@ -54,9 +54,17 @@ build_script:
       make -v &&
       cc -v &&
       ECHO make %MAKE_PARAMS% &&
-      make %MAKE_PARAMS% &&
-      make clean
+      make %MAKE_PARAMS%
     )
+  - if [%COMPILER%]==[gcc] if [%CONFIGURATION%]==[mingw64] (
+      COPY programs\zstd.exe zstd.exe &&
+      appveyor PushArtifact zstd.exe
+    )
+  - if [%COMPILER%]==[gcc] if [%CONFIGURATION%]==[mingw32] (
+      COPY programs\zstd.exe zstd32.exe &&
+      appveyor PushArtifact zstd32.exe
+    )
+  - if [%COMPILER%]==[gcc] make clean
   - if [%COMPILER%]==[visual] (
       ECHO *** &&
       ECHO *** Building Visual Studio 2008 %PLATFORM%\%CONFIGURATION% in %APPVEYOR_BUILD_FOLDER% &&
@@ -126,3 +134,27 @@ test_script:
       fuzzer_VS2013_%PLATFORM%_Release.exe %FUZZERTEST% &&
       fuzzer_VS2015_%PLATFORM%_Release.exe %FUZZERTEST%
     )
+
+artifacts:
+  - path: zstd.exe
+  - path: zstd32.exe 
+
+deploy:
+- provider: GitHub
+  auth_token:
+    secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
+  artifact: zstd.exe
+  force_update: true
+  on:
+    COMPILER: gcc
+    PLATFORM: "mingw64"
+    appveyor_repo_tag: true
+- provider: GitHub
+  auth_token:
+    secure: LgJo8emYc3sFnlNWkGl4/VYK3nk/8+RagcsqDlAi3xeqNGNutnKjcftjg84uJoT4
+  artifact: zstd32.exe 
+  force_update: true
+  on:
+    COMPILER: gcc
+    PLATFORM: "mingw32"
+    appveyor_repo_tag: true
