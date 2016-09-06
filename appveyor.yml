@@ -58,7 +58,7 @@ deploy:
     branch: artifacts
     COMPILER: gcc
     PLATFORM: "mingw64"
-    appveyor_repo_tag: false        # deploy on tag push only
+    appveyor_repo_tag: true        # deploy on tag push only
 - provider: GitHub
   release: zstd-v$(appveyor_build_version)
   description: 'zstd Windows binary'
@@ -70,4 +70,4 @@ deploy:
     branch: artifacts
     COMPILER: gcc
     PLATFORM: "mingw32"
-    appveyor_repo_tag: false        # deploy on tag push only
+    appveyor_repo_tag: true        # deploy on tag push only
