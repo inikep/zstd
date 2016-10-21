@@ -18,6 +18,8 @@
 #define ZSTD_FREQ_DIV   5
 #define ZSTD_MAX_PRICE  (1<<30)
 
+typedef enum { ZSTDopt_singlePass, ZSTDopt_firstPass, ZSTDopt_lastPass } ZSTDopt_passType;
+
 /*-*************************************
 *  Price functions for optimal parser
 ***************************************/
@@ -31,51 +33,53 @@ FORCE_INLINE void ZSTD_setLog2Prices(seqStore_t* ssPtr)
 }
 
 
-MEM_STATIC void ZSTD_rescaleFreqs(seqStore_t* ssPtr)
+MEM_STATIC void ZSTD_rescaleFreqs(seqStore_t* ssPtr, ZSTDopt_passType passType)
 {
     unsigned u;
 
     ssPtr->cachedLiterals = NULL;
     ssPtr->cachedPrice = ssPtr->cachedLitLength = 0;
 
-    if (ssPtr->litLengthSum == 0) {
-        ssPtr->litSum = (2<<Litbits);
-        ssPtr->litLengthSum = MaxLL+1;
-        ssPtr->matchLengthSum = MaxML+1;
-        ssPtr->offCodeSum = (MaxOff+1);
-        ssPtr->matchSum = (2<<Litbits);
+    if (passType != ZSTDopt_lastPass) {
+        if (ssPtr->litLengthSum == 0) {
+            ssPtr->litSum = (2<<Litbits);
+            ssPtr->litLengthSum = MaxLL+1;
+            ssPtr->matchLengthSum = MaxML+1;
+            ssPtr->offCodeSum = (MaxOff+1);
+            ssPtr->matchSum = (2<<Litbits);
 
-        for (u=0; u<=MaxLit; u++)
-            ssPtr->litFreq[u] = 2;
-        for (u=0; u<=MaxLL; u++)
-            ssPtr->litLengthFreq[u] = 1;
-        for (u=0; u<=MaxML; u++)
-            ssPtr->matchLengthFreq[u] = 1;
-        for (u=0; u<=MaxOff; u++)
-            ssPtr->offCodeFreq[u] = 1;
-    } else {
-        ssPtr->matchLengthSum = 0;
-        ssPtr->litLengthSum = 0;
-        ssPtr->offCodeSum = 0;
-        ssPtr->matchSum = 0;
-        ssPtr->litSum = 0;
+            for (u=0; u<=MaxLit; u++)
+                ssPtr->litFreq[u] = 2;
+            for (u=0; u<=MaxLL; u++)
+                ssPtr->litLengthFreq[u] = 1;
+            for (u=0; u<=MaxML; u++)
+                ssPtr->matchLengthFreq[u] = 1;
+            for (u=0; u<=MaxOff; u++)
+                ssPtr->offCodeFreq[u] = 1;
+        } else {
+            ssPtr->matchLengthSum = 0;
+            ssPtr->litLengthSum = 0;
+            ssPtr->offCodeSum = 0;
+            ssPtr->matchSum = 0;
+            ssPtr->litSum = 0;
 
-        for (u=0; u<=MaxLit; u++) {
-            ssPtr->litFreq[u] = 1 + (ssPtr->litFreq[u]>>ZSTD_FREQ_DIV);
-            ssPtr->litSum += ssPtr->litFreq[u];
-        }
-        for (u=0; u<=MaxLL; u++) {
-            ssPtr->litLengthFreq[u] = 1 + (ssPtr->litLengthFreq[u]>>ZSTD_FREQ_DIV);
-            ssPtr->litLengthSum += ssPtr->litLengthFreq[u];
-        }
-        for (u=0; u<=MaxML; u++) {
-            ssPtr->matchLengthFreq[u] = 1 + (ssPtr->matchLengthFreq[u]>>ZSTD_FREQ_DIV);
-            ssPtr->matchLengthSum += ssPtr->matchLengthFreq[u];
-            ssPtr->matchSum += ssPtr->matchLengthFreq[u] * (u + 3);
-        }
-        for (u=0; u<=MaxOff; u++) {
-            ssPtr->offCodeFreq[u] = 1 + (ssPtr->offCodeFreq[u]>>ZSTD_FREQ_DIV);
-            ssPtr->offCodeSum += ssPtr->offCodeFreq[u];
+            for (u=0; u<=MaxLit; u++) {
+                ssPtr->litFreq[u] = 1 + (ssPtr->litFreq[u]>>ZSTD_FREQ_DIV);
+                ssPtr->litSum += ssPtr->litFreq[u];
+            }
+            for (u=0; u<=MaxLL; u++) {
+                ssPtr->litLengthFreq[u] = 1 + (ssPtr->litLengthFreq[u]>>ZSTD_FREQ_DIV);
+                ssPtr->litLengthSum += ssPtr->litLengthFreq[u];
+            }
+            for (u=0; u<=MaxML; u++) {
+                ssPtr->matchLengthFreq[u] = 1 + (ssPtr->matchLengthFreq[u]>>ZSTD_FREQ_DIV);
+                ssPtr->matchLengthSum += ssPtr->matchLengthFreq[u];
+                ssPtr->matchSum += ssPtr->matchLengthFreq[u] * (u + 3);
+            }
+            for (u=0; u<=MaxOff; u++) {
+                ssPtr->offCodeFreq[u] = 1 + (ssPtr->offCodeFreq[u]>>ZSTD_FREQ_DIV);
+                ssPtr->offCodeSum += ssPtr->offCodeFreq[u];
+            }
         }
     }
 
@@ -126,6 +130,9 @@ FORCE_INLINE U32 ZSTD_getPrice(seqStore_t* seqStorePtr, U32 litLength, const BYT
     /* offset */
     BYTE const offCode = (BYTE)ZSTD_highbit32(offset+1);
     U32 price = offCode + seqStorePtr->log2offCodeSum - ZSTD_highbit32(seqStorePtr->offCodeFreq[offCode]+1);
+
+//    if (offCode >= 20) price += 4 + (offCode-20)*8;
+    if (offCode >= 20) price += (offCode-19)*2;
 
     /* match Length */
     {   const BYTE ML_deltaCode = 36;
@@ -376,7 +383,7 @@ static U32 ZSTD_BtGetAllMatches_selectMLS_extDict (
 *********************************/
 FORCE_INLINE
 void ZSTD_compressBlock_opt_generic(ZSTD_CCtx* ctx,
-                                    const void* src, size_t srcSize)
+                                    const void* src, size_t srcSize, ZSTDopt_passType passType)
 {
     seqStore_t* seqStorePtr = &(ctx->seqStore);
     const BYTE* const istart = (const BYTE*)src;
@@ -399,7 +406,7 @@ void ZSTD_compressBlock_opt_generic(ZSTD_CCtx* ctx,
 
     /* init */
     ctx->nextToUpdate3 = ctx->nextToUpdate;
-    ZSTD_rescaleFreqs(seqStorePtr);
+    ZSTD_rescaleFreqs(seqStorePtr, passType);
     ip += (ip==prefixStart);
     { U32 i; for (i=0; i<ZSTD_REP_NUM; i++) rep[i]=ctx->rep[i]; }
 
@@ -607,8 +614,8 @@ _storeSequence:   /* cur, last_pos, best_mlen, best_off have to be set */
                 if (litLength==0) offset--;
             }
 
-            ZSTD_updatePrice(seqStorePtr, litLength, anchor, offset, mlen-MINMATCH);
-            ZSTD_storeSeq(seqStorePtr, litLength, anchor, offset, mlen-MINMATCH);
+            if (passType != ZSTDopt_lastPass) ZSTD_updatePrice(seqStorePtr, litLength, anchor, offset, mlen-MINMATCH);
+            if (passType != ZSTDopt_firstPass) ZSTD_storeSeq(seqStorePtr, litLength, anchor, offset, mlen-MINMATCH);
             anchor = ip = ip + mlen;
     }    }   /* for (cur=0; cur < last_pos; ) */
 
@@ -616,7 +623,8 @@ _storeSequence:   /* cur, last_pos, best_mlen, best_off have to be set */
     { int i; for (i=0; i<ZSTD_REP_NUM; i++) ctx->savedRep[i] = rep[i]; }
 
     /* Last Literals */
-    {   size_t const lastLLSize = iend - anchor;
+    if (passType != ZSTDopt_firstPass) {
+        size_t const lastLLSize = iend - anchor;
         memcpy(seqStorePtr->lit, anchor, lastLLSize);
         seqStorePtr->lit += lastLLSize;
     }
@@ -624,8 +632,33 @@ _storeSequence:   /* cur, last_pos, best_mlen, best_off have to be set */
 
 
 FORCE_INLINE
+void ZSTD_compressBlock_opt2_generic(ZSTD_CCtx* zc,
+                                    const void* src, size_t srcSize)
+{
+    ZSTD_compressionParameters cParams = zc->params.cParams;
+    size_t const chainSize = (cParams.strategy == ZSTD_fast) ? 0 : (1 << cParams.chainLog);
+    size_t const hSize = ((size_t)1) << cParams.hashLog;
+    U32    const hashLog3 = (cParams.searchLength>3) ? 0 : MIN(ZSTD_HASHLOG3_MAX, cParams.windowLog);
+    size_t const h3Size = ((size_t)1) << hashLog3;
+    size_t const tableSpace = (chainSize + hSize + h3Size) * sizeof(U32);
+    U32   nextToUpdate = zc->nextToUpdate;
+    seqStore_t* seqStorePtr = &(zc->seqStore);
+
+#if 0
+    ZSTD_compressBlock_opt_generic(zc, src, srcSize, ZSTDopt_singlePass);
+#else
+    seqStorePtr->litLengthSum = 0; /* force reset of btopt stats */
+    ZSTD_compressBlock_opt_generic(zc, src, srcSize, ZSTDopt_firstPass);
+    memset(zc->workSpace, 0, tableSpace);
+    zc->nextToUpdate = nextToUpdate;
+    ZSTD_compressBlock_opt_generic(zc, src, srcSize, ZSTDopt_lastPass);
+#endif
+}
+
+
+FORCE_INLINE
 void ZSTD_compressBlock_opt_extDict_generic(ZSTD_CCtx* ctx,
-                                     const void* src, size_t srcSize)
+                                     const void* src, size_t srcSize, ZSTDopt_passType passType)
 {
     seqStore_t* seqStorePtr = &(ctx->seqStore);
     const BYTE* const istart = (const BYTE*)src;
@@ -654,7 +687,7 @@ void ZSTD_compressBlock_opt_extDict_generic(ZSTD_CCtx* ctx,
     { U32 i; for (i=0; i<ZSTD_REP_NUM; i++) rep[i]=ctx->rep[i]; }
 
     ctx->nextToUpdate3 = ctx->nextToUpdate;
-    ZSTD_rescaleFreqs(seqStorePtr);
+    ZSTD_rescaleFreqs(seqStorePtr, passType);
     ip += (ip==prefixStart);
 
     /* Match Loop */
@@ -880,8 +913,8 @@ _storeSequence:   /* cur, last_pos, best_mlen, best_off have to be set */
                 if (litLength==0) offset--;
             }
 
-            ZSTD_updatePrice(seqStorePtr, litLength, anchor, offset, mlen-MINMATCH);
-            ZSTD_storeSeq(seqStorePtr, litLength, anchor, offset, mlen-MINMATCH);
+            if (passType != ZSTDopt_lastPass) ZSTD_updatePrice(seqStorePtr, litLength, anchor, offset, mlen-MINMATCH);
+            if (passType != ZSTDopt_firstPass) ZSTD_storeSeq(seqStorePtr, litLength, anchor, offset, mlen-MINMATCH);
             anchor = ip = ip + mlen;
     }    }   /* for (cur=0; cur < last_pos; ) */
 
@@ -889,7 +922,8 @@ _storeSequence:   /* cur, last_pos, best_mlen, best_off have to be set */
     { int i; for (i=0; i<ZSTD_REP_NUM; i++) ctx->savedRep[i] = rep[i]; }
 
     /* Last Literals */
-    {   size_t lastLLSize = iend - anchor;
+    if (passType != ZSTDopt_firstPass) {
+        size_t lastLLSize = iend - anchor;
         memcpy(seqStorePtr->lit, anchor, lastLLSize);
         seqStorePtr->lit += lastLLSize;
     }
